@@ -14,11 +14,12 @@ y register: 5
 
 ## Working functions
 
- - **LDA** - Load memory into a registry
- - **LDX** - Load memory into x registry
- - **LDY** - Load memory into y registry
- - **STA** - Store the value from a registry into a memory address
- - **STX** - Store the value from x registry into a memory address
+ - **LDA** - Load memory into A registry
+ - **LDX** - Load memory into X registry
+ - **LDY** - Load memory into Y registry
+ - **STA** - Store the value from A registry into a memory address
+ - **STX** - Store the value from X registry into a memory address
+ - **STY** - Store the value from Y registry into a memory address
  - **JSR** - Jump to a subroutine
 
 I'm working on more functions
