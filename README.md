@@ -4,7 +4,7 @@ This is an emulator for a 6502 Processor coded in C++
 
 The only way to run a program is to hard-code it in main.cpp and provide the correct ticks for the execution function.
 
-Current hardcoded program logs this:
+Current hardcoded program outputs this:
 
 ```
 a register: 3
