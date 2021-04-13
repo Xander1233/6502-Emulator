@@ -14,9 +14,9 @@ y register: 5
 
 ## Working functions
 
- - LDA - Load memory into a registry
- - LDX - Load memory into x registry
- - LDY - Load memory into y registry
- - JSR - Jump to a subroutine
+ - **LDA** - Load memory into a registry
+ - **LDX** - Load memory into x registry
+ - **LDY** - Load memory into y registry
+ - **JSR** - Jump to a subroutine
 
 Im working on more functions
