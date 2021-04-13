@@ -235,6 +235,9 @@ struct CPU6502 {
                     printf("Instruction not handled %d\n", instruction);
                 } break;
             }
+            if (program_counter < 0xFF00) {
+                break;
+            }
         }
     }
 };
@@ -254,6 +257,11 @@ int main() {
     // inline program (test instructions (hard coded into memory)) - End
 
     cpu.Execute(6, memory);
+    
+    if (cpu.program_counter < 0xFF00) {
+        printf("Program counter overflow. Exit");
+        return 1;
+    }
 
     printf("a register: %d\nx register: %d\ny register: %d", cpu.a, cpu.x, cpu.y);
 
