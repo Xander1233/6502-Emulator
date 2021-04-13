@@ -69,11 +69,11 @@ struct CPU6502 {
         INS_STA_ZP = 0x85, // 3 ticks
         INS_STA_ZPX = 0x95, // 4 ticks
 
-        /*
         // Store X register
         INS_STX_ZP = 0x86, // 3 ticks
         INS_STX_ZPY = 0x96, // 4 ticks
 
+        /*
         // Store Y register
         INS_STY_ZP = 0x84, // 3 ticks
         INS_STY_ZPX = 0x94, // 4 ticks
@@ -201,6 +201,17 @@ struct CPU6502 {
                     Byte ZeroPageAddress = Fetch(ticks, memory);
                     ZeroPageAddress += x;
                     memory.Write(a, ZeroPageAddress, ticks);
+                } break;
+                
+                case INS_STX_ZP: {
+                    Byte ZeroPageAddress = Fetch(ticks, memory);
+                    memory.Write(x, ZeroPageAddress, ticks);
+                } break;
+
+                case INS_STX_ZPY: {
+                    Byte ZeroPageAddress = Fetch(ticks, memory);
+                    ZeroPageAddress += y;
+                    memory.Write(x, ZeroPageAddress, ticks);
                 } break;
                     
                 case INS_JSR: {
