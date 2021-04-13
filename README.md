@@ -18,6 +18,7 @@ y register: 5
  - **LDX** - Load memory into x registry
  - **LDY** - Load memory into y registry
  - **STA** - Store the value from a registry into a memory address
+ - **STX** - Store the value from x registry into a memory address
  - **JSR** - Jump to a subroutine
 
 I'm working on more functions
