@@ -73,11 +73,9 @@ struct CPU6502 {
         INS_STX_ZP = 0x86, // 3 ticks
         INS_STX_ZPY = 0x96, // 4 ticks
 
-        /*
         // Store Y register
         INS_STY_ZP = 0x84, // 3 ticks
         INS_STY_ZPX = 0x94, // 4 ticks
-         */
 
         // Jumps
         INS_JSR = 0x20; // 6 ticks
@@ -213,6 +211,17 @@ struct CPU6502 {
                     ZeroPageAddress += y;
                     memory.Write(x, ZeroPageAddress, ticks);
                 } break;
+                    
+                case INS_STY_ZP: {
+                    Byte ZeroPageAddress = Fetch(ticks, memory);
+                    memory.Write(y, ZeroPageAddress, ticks);
+                } break;
+
+                case INS_STY_ZPX: {
+                    Byte ZeroPageAddress = Fetch(ticks, memory);
+                    ZeroPageAddress += x;
+                    memory.Write(y, ZeroPageAddress, ticks);
+                }
                     
                 case INS_JSR: {
                     Word SubRoutineAddress = FetchWord(ticks, memory);
