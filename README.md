@@ -19,4 +19,4 @@ y register: 5
  - **LDY** - Load memory into y registry
  - **JSR** - Jump to a subroutine
 
-Im working on more functions
+I'm working on more functions
