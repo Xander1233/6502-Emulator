@@ -76,6 +76,36 @@ struct CPU6502 {
         // Store Y register
         INS_STY_ZP = 0x84, // 3 ticks
         INS_STY_ZPX = 0x94, // 4 ticks
+    
+        // Transfer Accumulator to x
+        INS_TAX = 0xAA, // 2 ticks
+
+        // Transfer Accumulator to y
+        INS_TAY = 0xA8, // 2 ticks
+
+        // Transfer x to Accumulator
+        INS_TXA = 0x8A, // 2 ticks
+
+        // Transfer y to Accumulator
+        INS_TYA = 0x98, // 2 ticks
+
+        // Transfer stack pointer to x
+        INS_TSX = 0xBA, // 2 ticks
+
+        // Transfer x to stack pointer
+        INS_TXS = 0x9A, // 2 ticks
+
+        // Push Accumulator
+        INS_PHA = 0x48, // 3 ticks
+
+        // Pull Accumulator
+        INS_PLA = 0x68, // 4 ticks
+
+        // Increment x
+        INS_INX = 0xE8, // 2 ticks
+
+        // Increment y
+        INS_INY = 0xC8, // 2 ticks
 
         // Jumps
         INS_JSR = 0x20; // 6 ticks
@@ -222,6 +252,67 @@ struct CPU6502 {
                     ZeroPageAddress += x;
                     memory.Write(y, ZeroPageAddress, ticks);
                 }
+
+                case INS_TSX: {
+                    x = stack_pointer;
+                    ticks--;
+                    LDXSetFlags();
+                } break;
+
+                case INS_TAX: {
+                    x = a;
+                    ticks--;
+                    LDXSetFlags();
+                } break;
+
+                case INS_TAY: {
+                    y = a;
+                    ticks--;
+                    LDYSetFlags();
+                } break;
+
+                case INS_TXA: {
+                    a = x;
+                    ticks--;
+                    LDASetFlags();
+                } break;
+
+                case INS_TXS: {
+                    stack_pointer = x;
+                    ticks--;
+                } break;
+
+                case INS_TYA: {
+                    a = y;
+                    ticks--;
+                    LDASetFlags();
+                } break;
+
+                case INS_PHA: {
+                    memory.WriteWord(a << 8, stack_pointer, ticks);
+                    stack_pointer++;
+                } break;
+
+                case INS_PLA: {
+                    a = memory[stack_pointer];
+                    ticks--;
+                    memory[stack_pointer] = 0;
+                    ticks--;
+                    stack_pointer--;
+                    LDASetFlags();
+                } break;
+
+                case INS_INX: {
+                    x++;
+                    ticks--;
+                    LDXSetFlags();
+                } break;
+
+                case INS_INY: {
+                    y++;
+                    ticks--;
+                    LDYSetFlags();
+                } break;
                     
                 case INS_JSR: {
                     Word SubRoutineAddress = FetchWord(ticks, memory);
