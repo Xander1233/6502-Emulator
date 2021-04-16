@@ -21,15 +21,15 @@ y register: 5
  - **STX** - Store the value from X registry into a memory address
  - **STY** - Store the value from Y registry into a memory address
  - **JSR** - Jump to a subroutine
- - **TAX** - Transfer a to x
- - **TAY** - Transfer a to y
- - **TXA** - Transfer x to a
- - **TYA** - Transfer y to a
- - **TSX** - Transfer stackpointer to x
- - **TXS** - Transfer x to stackpointer
- - **PHA** - Push a to stack
- - **PLA** - Pull a from stack
- - **INX** - Increment x
- - **INY** - Increment y
+ - **TAX** - Transfer A to X
+ - **TAY** - Transfer A to Y
+ - **TXA** - Transfer X to A
+ - **TYA** - Transfer Y to A
+ - **TSX** - Transfer stackpointer to X
+ - **TXS** - Transfer X to stackpointer
+ - **PHA** - Push A to stack
+ - **PLA** - Pull A from stack
+ - **INX** - Increment X
+ - **INY** - Increment Y
 
 I'm working on more functions
