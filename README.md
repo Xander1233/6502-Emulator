@@ -31,5 +31,16 @@ y register: 5
  - **PLA** - Pull A from stack
  - **INX** - Increment X
  - **INY** - Increment Y
+ - **DEX** - Decrement X
+ - **DEY** - Decrement Y
+ - **NOP** - No operation
+ - **RTS** - Return from subroutine
+ - **SEC** - Set carry flag
+ - **SED** - Set decimal mode
+ - **SEI** - Set interrupt disable
+ - **CLC** - Clear carry flag
+ - **CLD** - Clear decimal mode
+ - **CLI** - Clear interrupt disable
+ - **CLV** - Clear overflow flag
 
 I'm working on more functions
