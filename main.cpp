@@ -30,6 +30,11 @@ struct MEMORY {
         Data[Address + 1] = (value >> 8);
         ticks -= 2;
     }
+
+    void Write(Byte value, u32 Address, u32& ticks) {
+        Data[Address] = value;
+        ticks--;
+    }
 };
 
 struct CPU6502 {
@@ -76,7 +81,7 @@ struct CPU6502 {
         // Store Y register
         INS_STY_ZP = 0x84, // 3 ticks
         INS_STY_ZPX = 0x94, // 4 ticks
-    
+
         // Transfer Accumulator to x
         INS_TAX = 0xAA, // 2 ticks
 
@@ -107,11 +112,45 @@ struct CPU6502 {
         // Increment y
         INS_INY = 0xC8, // 2 ticks
 
+        // Decrement x
+        INS_DEX = 0xCA, // 2 ticks
+
+        // Decrement y
+        INS_DEY = 0x88, // 2 ticks
+
+        // No operation
+        INS_NOP = 0xEA, // 2 ticks
+
+        // Return from Subroutine
+        INS_RTS = 0x60, // 6 ticks
+
+        // Set Carry Flag
+        INS_SEC = 0x38, // 2 ticks
+
+        // Set Decimal Flag
+        INS_SED = 0xF8, // 2 ticks
+
+        // Set Interrupt Disable
+        INS_SEI = 0x78, // 2 ticks
+
+        // Clear Carry Flag
+        INS_CLC = 0x18, // 2 ticks
+
+        // Clear Decimal Mode
+        INS_CLD = 0xD8, // 2 ticks
+
+        // Clear Interrupt Disable
+        INS_CLI = 0x58, // 2 ticks
+
+        // Clear Overflow Flag
+        INS_CLV = 0xB8, // 2 ticks
+
         // Jumps
+        INS_JMP = 0x4C, // 3 ticks
         INS_JSR = 0x20; // 6 ticks
 
     void Reset(MEMORY& memory) {
-        program_counter = 0xFFCC;
+        program_counter = 0xFFF1;
         stack_pointer = 0x1000;
         a = x = y = 0;
         carry = zero = interrupt = decimal = Break = overflow = negative = 0;
@@ -230,7 +269,7 @@ struct CPU6502 {
                     ZeroPageAddress += x;
                     memory.Write(a, ZeroPageAddress, ticks);
                 } break;
-                
+
                 case INS_STX_ZP: {
                     Byte ZeroPageAddress = Fetch(ticks, memory);
                     memory.Write(x, ZeroPageAddress, ticks);
@@ -241,7 +280,7 @@ struct CPU6502 {
                     ZeroPageAddress += y;
                     memory.Write(x, ZeroPageAddress, ticks);
                 } break;
-                    
+
                 case INS_STY_ZP: {
                     Byte ZeroPageAddress = Fetch(ticks, memory);
                     memory.Write(y, ZeroPageAddress, ticks);
@@ -313,13 +352,77 @@ struct CPU6502 {
                     ticks--;
                     LDYSetFlags();
                 } break;
-                    
+
+                case INS_NOP: {
+                    ticks--;
+                } break;
+
+                case INS_SEC: {
+                    carry = 1;
+                    ticks--;
+                } break;
+
+                case INS_SED: {
+                    decimal = 1;
+                    ticks--;
+                } break;
+
+                case INS_SEI: {
+                    interrupt = 1;
+                    ticks--;
+                } break;
+
+                case INS_CLC: {
+                    carry = 0;
+                    ticks--;
+                } break;
+
+                case INS_CLD: {
+                    decimal = 0;
+                    ticks--;
+                } break;
+
+                case INS_CLI: {
+                    interrupt = 0;
+                    ticks--;
+                } break;
+
+                case INS_CLV: {
+                    overflow = 0;
+                    ticks--;
+                } break;
+
+                case INS_DEX: {
+                    x--;
+                    ticks--;
+                    LDXSetFlags();
+                } break;
+
+                case INS_DEY: {
+                    y--;
+                    ticks--;
+                    LDYSetFlags();
+                } break;
+
+                case INS_JMP: {
+                    Word newAddress = FetchWord(ticks, memory);
+                    program_counter = newAddress;
+                } break;
+
+                case INS_RTS: {
+                    program_counter = stack_pointer;
+                    Word NewProgramCounter = FetchWord(ticks, memory);
+                    memory.WriteWord(0, stack_pointer, ticks);
+                    program_counter = NewProgramCounter;
+                    ticks--;
+                    stack_pointer -= 2;
+                } break;
+
                 case INS_JSR: {
                     Word SubRoutineAddress = FetchWord(ticks, memory);
                     memory.WriteWord(program_counter - 1, stack_pointer, ticks);
                     stack_pointer++;
                     program_counter = SubRoutineAddress;
-                    ticks--;
                 } break;
 
                 default: {
@@ -339,16 +442,22 @@ int main() {
     cpu.Reset(memory);
 
     // inline program (test instructions (hard coded into memory)) - Start
-    memory[0xFFCC] = CPU6502::INS_LDA_IM;
-    memory[0xFFCD] = 0x3;
-    memory[0xFFCE] = CPU6502::INS_LDX_IM;
-    memory[0xFFCF] = 0x9;
-    memory[0xFFD0] = CPU6502::INS_LDY_IM;
-    memory[0xFFD1] = 0x5;
+
+    memory[0xFFF1] = CPU6502::INS_LDA_IM; // 2 ticks
+    memory[0xFFF2] = 0x26;
+    memory[0xFFF3] = CPU6502::INS_TAX; // 2 ticks
+    memory[0xFFF4] = CPU6502::INS_INX; // 2 ticks
+    memory[0xFFF5] = CPU6502::INS_JMP; // 3 ticks
+    memory[0xFFF6] = 0x01;
+    memory[0xFFF7] = 0xFF;
+    memory[0xFF01] = CPU6502::INS_TAY; // 2 ticks
+    memory[0xFF02] = CPU6502::INS_DEY; // 2 ticks
+    memory[0xFF03] = CPU6502::INS_DEY; // 2 ticks
+
     // inline program (test instructions (hard coded into memory)) - End
 
-    cpu.Execute(6, memory);
-    
+    cpu.Execute(15, memory);
+
     if (cpu.program_counter < 0xFF00) {
         printf("Program counter overflow. Exit");
         return 1;
