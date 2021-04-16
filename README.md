@@ -7,9 +7,9 @@ The only way to run a program is to hard-code it in main.cpp and provide the cor
 Current hardcoded program outputs this:
 
 ```
-a register: 3
-x register: 9
-y register: 5
+a register: 38
+x register: 39
+y register: 36
 ```
 
 ## Working functions
