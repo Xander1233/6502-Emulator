@@ -42,7 +42,7 @@ This is an emulator for a 6502 Processor coded in C++
 
 ### Operation codes as words
 
-**To run a program you might use the words below in the separate file called program.txt in the same directory**
+**To run a program you might use the words below in the separate file called **``program.xndr``** in the same directory**
 
  - **ldaim** - Load Accumulator | Immediate
  - **ldazp** - Load Accumulator | Zero Page
