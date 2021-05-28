@@ -1,5 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+
+using namespace std;
 
 // Regarding to http://www.obelisk.me.uk/6502/
 
@@ -36,6 +42,24 @@ struct MEMORY {
         ticks--;
     }
 };
+
+char asciitolower(char in) {
+    if (in <= 'Z' && in >= 'A')
+        return in - ('Z' - 'z');
+    return in;
+}
+
+void toLowerCase(string& input) {
+    string res = "";
+    for (int i = 0; i < input.length(); i++) {
+        res += asciitolower(input[i]);
+    }
+    input = res;
+}
+
+constexpr unsigned int str2int(const char* str, int h = 0) {
+    return !str[h] ? 5381 : (str2int(str, h + 1) * 33) ^ str[h];
+}
 
 struct CPU6502 {
 
@@ -145,9 +169,284 @@ struct CPU6502 {
         // Clear Overflow Flag
         INS_CLV = 0xB8, // 2 ticks
 
+        // Logical AND
+        INS_AND_IM = 0x29, // 2 ticks
+        INS_AND_ZP = 0x25, // 3 ticks
+        INS_AND_ZPX = 0x35, // 4 ticks
+
+        // Decrement Memory
+        INS_DEC_ZP = 0xC6, // 4 ticks
+        INS_DEC_ZPX = 0xD6, // 5 ticks
+
+        // Increment Memory
+        INS_INC_ZP = 0xE6, // 4 ticks
+        INS_INC_ZPX = 0xF6, // 6 ticks
+
+        // Arithmetic Shift Left
+        INS_ASL_ACC = 0x0A, // 2 ticks
+        INS_ASL_ZP = 0x06, // 5 ticks
+        INS_ASL_ZPX = 0x16, // 6 ticks
+
+        // Logical Shift Right
+        INS_LSR_ACC = 0x4A, // 2 ticks
+        INS_LSR_ZP = 0x46, // 5 ticks
+        INS_LSR_ZPX = 0x56, // 6 ticks
+
+        // Logical Inclusive OR
+        INS_ORA_IM = 0x09, // 2 ticks
+        INS_ORA_ZP = 0x05, // 3 ticks
+        INS_ORA_ZPX = 0x15, // 4 ticks
+
         // Jumps
         INS_JMP = 0x4C, // 3 ticks
         INS_JSR = 0x20; // 6 ticks
+
+
+    void interpretInstruction(string instruction, Word& counter, MEMORY& memory, u32& ticks) {
+        Byte ins;
+
+        if (instruction.compare("ldaim") == 0) {
+            ins = INS_LDA_IM;
+            ticks += 2;
+        }
+        else if (instruction.compare("ldazp") == 0) {
+            ins = INS_LDA_ZP;
+            ticks += 3;
+        }
+        else if (instruction.compare("ldazpx") == 0) {
+            ins = INS_LDA_ZPX;
+            ticks += 4;
+        }
+        else if (instruction.compare("ldxim") == 0) {
+            ins = INS_LDX_IM;
+            ticks += 2;
+        }
+        else if (instruction.compare("ldxzp") == 0) {
+            ins = INS_LDX_ZP;
+            ticks += 3;
+        }
+        else if (instruction.compare("ldxzpy") == 0) {
+            ins = INS_LDX_ZPY;
+            ticks += 4;
+        }
+        else if (instruction.compare("ldyim") == 0) {
+            ins = INS_LDY_IM;
+            ticks += 2;
+        }
+        else if (instruction.compare("ldyzp") == 0) {
+            ins = INS_LDY_ZP;
+            ticks += 3;
+        }
+        else if (instruction.compare("ldyzpx") == 0) {
+            ins = INS_LDY_ZPX;
+            ticks += 4;
+        }
+
+        else if (instruction.compare("sta") == 0) {
+            ins = INS_STA_ZP;
+            ticks += 3;
+        }
+        else if (instruction.compare("stax") == 0) {
+            ins = INS_STA_ZPX;
+            ticks += 4;
+        }
+        else if (instruction.compare("stx") == 0) {
+            ins = INS_STX_ZP;
+            ticks += 3;
+        }
+        else if (instruction.compare("stxy") == 0) {
+            ins = INS_STX_ZPY;
+            ticks += 4;
+        }
+        else if (instruction.compare("sty") == 0) {
+            ins = INS_STY_ZP;
+            ticks += 3;
+        }
+        else if (instruction.compare("styx") == 0) {
+            ins = INS_STY_ZPX;
+            ticks += 4;
+        }
+
+        else if (instruction.compare("tax") == 0) {
+            ins = INS_TAX;
+            ticks += 2;
+        }
+        else if (instruction.compare("tay") == 0) {
+            ins = INS_TAY;
+            ticks += 2;
+        }
+        else if (instruction.compare("txa") == 0) {
+            ins = INS_TXA;
+            ticks += 2;
+        }
+        else if (instruction.compare("tya") == 0) {
+            ins = INS_TYA;
+            ticks += 2;
+        }
+        else if (instruction.compare("tsx") == 0) {
+            ins = INS_TSX;
+            ticks += 2;
+        }
+        else if (instruction.compare("txs") == 0) {
+            ins = INS_TXS;
+            ticks += 2;
+        }
+
+        else if (instruction.compare("pha") == 0) {
+            ins = INS_PHA;
+            ticks += 3;
+        }
+        else if (instruction.compare("pla") == 0) {
+            ins = INS_PLA;
+            ticks += 4;
+        }
+
+        else if (instruction.compare("inx") == 0) {
+            ins = INS_INX;
+            ticks += 2;
+        }
+        else if (instruction.compare("iny") == 0) {
+            ins = INS_INY;
+            ticks += 2;
+        }
+        else if (instruction.compare("dex") == 0) {
+            ins = INS_DEX;
+            ticks += 2;
+        }
+        else if (instruction.compare("dey") == 0) {
+            ins = INS_DEY;
+            ticks += 2;
+        }
+
+        else if (instruction.compare("nop") == 0) {
+            ins = INS_NOP;
+            ticks += 2;
+        }
+
+        else if (instruction.compare("rts") == 0) {
+            ins = INS_RTS;
+            ticks += 6;
+        }
+
+        else if (instruction.compare("sec") == 0) {
+            ins = INS_SEC;
+            ticks += 2;
+        }
+        else if (instruction.compare("sed") == 0) {
+            ins = INS_SED;
+            ticks += 2;
+        }
+        else if (instruction.compare("sei") == 0) {
+            ins = INS_SEI;
+            ticks += 2;
+        }
+        else if (instruction.compare("clc") == 0) {
+            ins = INS_CLC;
+            ticks += 2;
+        }
+        else if (instruction.compare("cld") == 0) {
+            ins = INS_CLD;
+            ticks += 2;
+        }
+        else if (instruction.compare("cli") == 0) {
+            ins = INS_CLI;
+            ticks += 2;
+        }
+        else if (instruction.compare("clv") == 0) {
+            ins = INS_CLV;
+            ticks += 2;
+        }
+
+        else if (instruction.compare("and") == 0) {
+            ins = INS_AND_IM;
+            ticks += 2;
+        }
+        else if (instruction.compare("andzp") == 0) {
+            ins = INS_AND_ZP;
+            ticks += 3;
+        }
+        else if (instruction.compare("andzpx") == 0) {
+            ins = INS_AND_ZPX;
+            ticks += 4;
+        }
+
+        else if (instruction.compare("dec") == 0) {
+            ins = INS_DEC_ZP;
+            ticks += 4;
+        }
+        else if (instruction.compare("decx") == 0) {
+            ins = INS_DEC_ZPX;
+            ticks += 5;
+        }
+        else if (instruction.compare("inc") == 0) {
+            ins = INS_INC_ZP;
+            ticks += 4;
+        }
+        else if (instruction.compare("incx") == 0) {
+            ins = INS_INC_ZPX;
+            ticks += 5;
+        }
+
+        else if (instruction.compare("asl") == 0) {
+            ins = INS_ASL_ACC;
+            ticks += 2;
+        }
+        else if (instruction.compare("aslzp") == 0) {
+            ins = INS_ASL_ZP;
+            ticks += 5;
+        }
+        else if (instruction.compare("aslzpx") == 0) {
+            ins = INS_ASL_ZPX;
+            ticks += 6;
+        }
+
+        else if (instruction.compare("lsr") == 0) {
+            ins = INS_LSR_ACC;
+            ticks += 2;
+        }
+        else if (instruction.compare("lsrzp") == 0) {
+            ins = INS_LSR_ZP;
+            ticks += 5;
+        }
+        else if (instruction.compare("lsrzpx") == 0) {
+            ins = INS_LSR_ZPX;
+            ticks += 6;
+        }
+
+        else if (instruction.compare("or") == 0) {
+            ins = INS_ORA_IM;
+            ticks += 2;
+        }
+        else if (instruction.compare("orzp") == 0) {
+            ins = INS_ORA_ZP;
+            ticks += 3;
+        }
+        else if (instruction.compare("orzpx") == 0) {
+            ins = INS_ORA_ZPX;
+            ticks += 4;
+        }
+
+        else if (instruction.compare("jmp") == 0) {
+            ins = INS_JMP;
+            ticks += 3;
+        }
+        else if (instruction.compare("jsr") == 0) {
+            ins = INS_JSR;
+            ticks += 4;
+        }
+        else {
+            ins = INS_NOP;
+            ticks += 2;
+        }
+
+        memory[counter] = ins;
+        counter++;
+    }
+
+    void InterpretNumbers(Byte value, Word& counter, MEMORY& memory) {
+        memory[counter] = value;
+        counter++;
+    }
 
     void Reset(MEMORY& memory) {
         program_counter = 0xFFF1;
@@ -200,239 +499,427 @@ struct CPU6502 {
         while (ticks > 0) {
             Byte instruction = Fetch(ticks, memory);
             switch (instruction) {
-                case INS_LDA_IM: {
-                    Byte value = Fetch(ticks, memory);
-                    a = value;
-                    LDASetFlags();
-                } break;
+            case INS_LDA_IM: {
+                Byte value = Fetch(ticks, memory);
+                a = value;
+                LDASetFlags();
+            } break;
 
-                case INS_LDA_ZP: {
-                    Byte ZeroPageAddress = Fetch(ticks, memory);
-                    a = Read(ticks, ZeroPageAddress, memory);
-                    LDASetFlags();
-                } break;
+            case INS_LDA_ZP: {
+                Byte ZeroPageAddress = Fetch(ticks, memory);
+                a = Read(ticks, ZeroPageAddress, memory);
+                LDASetFlags();
+            } break;
 
-                case INS_LDA_ZPX: {
-                    Byte ZeroPageAddress = Fetch(ticks, memory);
-                    ZeroPageAddress += x;
-                    ticks--;
-                    a = Read(ticks, ZeroPageAddress, memory);
-                    LDASetFlags();
-                } break;
+            case INS_LDA_ZPX: {
+                Byte ZeroPageAddress = Fetch(ticks, memory);
+                ZeroPageAddress += x;
+                ticks--;
+                a = Read(ticks, ZeroPageAddress, memory);
+                LDASetFlags();
+            } break;
 
-                case INS_LDX_IM: {
-                    Byte value = Fetch(ticks, memory);
-                    x = value;
-                    LDXSetFlags();
-                } break;
+            case INS_LDX_IM: {
+                Byte value = Fetch(ticks, memory);
+                x = value;
+                LDXSetFlags();
+            } break;
 
-                case INS_LDX_ZP: {
-                    Byte ZeroPageAddress = Fetch(ticks, memory);
-                    x = Read(ticks, ZeroPageAddress, memory);
-                    LDXSetFlags();
-                } break;
+            case INS_LDX_ZP: {
+                Byte ZeroPageAddress = Fetch(ticks, memory);
+                x = Read(ticks, ZeroPageAddress, memory);
+                LDXSetFlags();
+            } break;
 
-                case INS_LDX_ZPY: {
-                    Byte ZeroPageAddress = Fetch(ticks, memory);
-                    ZeroPageAddress += y;
-                    ticks--;
-                    x = Read(ticks, ZeroPageAddress, memory);
-                    LDXSetFlags();
-                } break;
+            case INS_LDX_ZPY: {
+                Byte ZeroPageAddress = Fetch(ticks, memory);
+                ZeroPageAddress += y;
+                ticks--;
+                x = Read(ticks, ZeroPageAddress, memory);
+                LDXSetFlags();
+            } break;
 
-                case INS_LDY_IM: {
-                    Byte value = Fetch(ticks, memory);
-                    y = value;
-                    LDYSetFlags();
-                } break;
+            case INS_LDY_IM: {
+                Byte value = Fetch(ticks, memory);
+                y = value;
+                LDYSetFlags();
+            } break;
 
-                case INS_LDY_ZP: {
-                    Byte ZeroPageAddress = Fetch(ticks, memory);
-                    y = Read(ticks, ZeroPageAddress, memory);
-                    LDYSetFlags();
-                } break;
+            case INS_LDY_ZP: {
+                Byte ZeroPageAddress = Fetch(ticks, memory);
+                y = Read(ticks, ZeroPageAddress, memory);
+                LDYSetFlags();
+            } break;
 
-                case INS_LDY_ZPX: {
-                    Byte ZeroPageAddress = Fetch(ticks, memory);
-                    ZeroPageAddress += x;
-                    ticks--;
-                    y = Read(ticks, ZeroPageAddress, memory);
-                } break;
+            case INS_LDY_ZPX: {
+                Byte ZeroPageAddress = Fetch(ticks, memory);
+                ZeroPageAddress += x;
+                ticks--;
+                y = Read(ticks, ZeroPageAddress, memory);
+            } break;
 
-                case INS_STA_ZP: {
-                    Byte ZeroPageAddress = Fetch(ticks, memory);
-                    memory.Write(a, ZeroPageAddress, ticks);
-                } break;
+            case INS_STA_ZP: {
+                Byte ZeroPageAddress = Fetch(ticks, memory);
+                memory.Write(a, ZeroPageAddress, ticks);
+            } break;
 
-                case INS_STA_ZPX: {
-                    Byte ZeroPageAddress = Fetch(ticks, memory);
-                    ZeroPageAddress += x;
-                    memory.Write(a, ZeroPageAddress, ticks);
-                } break;
+            case INS_STA_ZPX: {
+                Byte ZeroPageAddress = Fetch(ticks, memory);
+                ZeroPageAddress += x;
+                memory.Write(a, ZeroPageAddress, ticks);
+            } break;
 
-                case INS_STX_ZP: {
-                    Byte ZeroPageAddress = Fetch(ticks, memory);
-                    memory.Write(x, ZeroPageAddress, ticks);
-                } break;
+            case INS_STX_ZP: {
+                Byte ZeroPageAddress = Fetch(ticks, memory);
+                memory.Write(x, ZeroPageAddress, ticks);
+            } break;
 
-                case INS_STX_ZPY: {
-                    Byte ZeroPageAddress = Fetch(ticks, memory);
-                    ZeroPageAddress += y;
-                    memory.Write(x, ZeroPageAddress, ticks);
-                } break;
+            case INS_STX_ZPY: {
+                Byte ZeroPageAddress = Fetch(ticks, memory);
+                ZeroPageAddress += y;
+                memory.Write(x, ZeroPageAddress, ticks);
+            } break;
 
-                case INS_STY_ZP: {
-                    Byte ZeroPageAddress = Fetch(ticks, memory);
-                    memory.Write(y, ZeroPageAddress, ticks);
-                } break;
+            case INS_STY_ZP: {
+                Byte ZeroPageAddress = Fetch(ticks, memory);
+                memory.Write(y, ZeroPageAddress, ticks);
+            } break;
 
-                case INS_STY_ZPX: {
-                    Byte ZeroPageAddress = Fetch(ticks, memory);
-                    ZeroPageAddress += x;
-                    memory.Write(y, ZeroPageAddress, ticks);
-                }
+            case INS_STY_ZPX: {
+                Byte ZeroPageAddress = Fetch(ticks, memory);
+                ZeroPageAddress += x;
+                memory.Write(y, ZeroPageAddress, ticks);
+            }
 
-                case INS_TSX: {
-                    x = stack_pointer;
-                    ticks--;
-                    LDXSetFlags();
-                } break;
+            case INS_TSX: {
+                x = stack_pointer;
+                ticks--;
+                LDXSetFlags();
+            } break;
 
-                case INS_TAX: {
-                    x = a;
-                    ticks--;
-                    LDXSetFlags();
-                } break;
+            case INS_TAX: {
+                x = a;
+                ticks--;
+                LDXSetFlags();
+            } break;
 
-                case INS_TAY: {
-                    y = a;
-                    ticks--;
-                    LDYSetFlags();
-                } break;
+            case INS_TAY: {
+                y = a;
+                ticks--;
+                LDYSetFlags();
+            } break;
 
-                case INS_TXA: {
-                    a = x;
-                    ticks--;
-                    LDASetFlags();
-                } break;
+            case INS_TXA: {
+                a = x;
+                ticks--;
+                LDASetFlags();
+            } break;
 
-                case INS_TXS: {
-                    stack_pointer = x;
-                    ticks--;
-                } break;
+            case INS_TXS: {
+                stack_pointer = x;
+                ticks--;
+            } break;
 
-                case INS_TYA: {
-                    a = y;
-                    ticks--;
-                    LDASetFlags();
-                } break;
+            case INS_TYA: {
+                a = y;
+                ticks--;
+                LDASetFlags();
+            } break;
 
-                case INS_PHA: {
-                    memory.WriteWord(a << 8, stack_pointer, ticks);
-                    stack_pointer++;
-                } break;
+            case INS_PHA: {
+                memory.WriteWord(a << 8, stack_pointer, ticks);
+                stack_pointer++;
+            } break;
 
-                case INS_PLA: {
-                    a = memory[stack_pointer];
-                    ticks--;
-                    memory[stack_pointer] = 0;
-                    ticks--;
-                    stack_pointer--;
-                    LDASetFlags();
-                } break;
+            case INS_PLA: {
+                a = memory[stack_pointer];
+                ticks--;
+                memory[stack_pointer] = 0;
+                ticks--;
+                stack_pointer--;
+                LDASetFlags();
+            } break;
 
-                case INS_INX: {
-                    x++;
-                    ticks--;
-                    LDXSetFlags();
-                } break;
+            case INS_INX: {
+                x++;
+                ticks--;
+                LDXSetFlags();
+            } break;
 
-                case INS_INY: {
-                    y++;
-                    ticks--;
-                    LDYSetFlags();
-                } break;
+            case INS_INY: {
+                y++;
+                ticks--;
+                LDYSetFlags();
+            } break;
 
-                case INS_NOP: {
-                    ticks--;
-                } break;
+            case INS_NOP: {
+                ticks--;
+            } break;
 
-                case INS_SEC: {
-                    carry = 1;
-                    ticks--;
-                } break;
+            case INS_SEC: {
+                carry = 1;
+                ticks--;
+            } break;
 
-                case INS_SED: {
-                    decimal = 1;
-                    ticks--;
-                } break;
+            case INS_SED: {
+                decimal = 1;
+                ticks--;
+            } break;
 
-                case INS_SEI: {
-                    interrupt = 1;
-                    ticks--;
-                } break;
+            case INS_SEI: {
+                interrupt = 1;
+                ticks--;
+            } break;
 
-                case INS_CLC: {
-                    carry = 0;
-                    ticks--;
-                } break;
+            case INS_CLC: {
+                carry = 0;
+                ticks--;
+            } break;
 
-                case INS_CLD: {
-                    decimal = 0;
-                    ticks--;
-                } break;
+            case INS_CLD: {
+                decimal = 0;
+                ticks--;
+            } break;
 
-                case INS_CLI: {
-                    interrupt = 0;
-                    ticks--;
-                } break;
+            case INS_CLI: {
+                interrupt = 0;
+                ticks--;
+            } break;
 
-                case INS_CLV: {
-                    overflow = 0;
-                    ticks--;
-                } break;
+            case INS_CLV: {
+                overflow = 0;
+                ticks--;
+            } break;
 
-                case INS_DEX: {
-                    x--;
-                    ticks--;
-                    LDXSetFlags();
-                } break;
+            case INS_DEX: {
+                x--;
+                ticks--;
+                LDXSetFlags();
+            } break;
 
-                case INS_DEY: {
-                    y--;
-                    ticks--;
-                    LDYSetFlags();
-                } break;
+            case INS_DEY: {
+                y--;
+                ticks--;
+                LDYSetFlags();
+            } break;
 
-                case INS_JMP: {
-                    Word newAddress = FetchWord(ticks, memory);
-                    program_counter = newAddress;
-                } break;
+            case INS_AND_IM: {
+                Byte value = Fetch(ticks, memory);
+                a = a & value;
+                LDASetFlags();
+            } break;
 
-                case INS_RTS: {
-                    program_counter = stack_pointer;
-                    Word NewProgramCounter = FetchWord(ticks, memory);
-                    memory.WriteWord(0, stack_pointer, ticks);
-                    program_counter = NewProgramCounter;
-                    ticks--;
-                    stack_pointer -= 2;
-                } break;
+            case INS_AND_ZP: {
+                Byte ZeroPageAddress = Fetch(ticks, memory);
+                Byte value = Read(ticks, ZeroPageAddress, memory);
+                a = a & value;
+                LDASetFlags();
+            } break;
 
-                case INS_JSR: {
-                    Word SubRoutineAddress = FetchWord(ticks, memory);
-                    memory.WriteWord(program_counter - 1, stack_pointer, ticks);
-                    stack_pointer++;
-                    program_counter = SubRoutineAddress;
-                } break;
+            case INS_AND_ZPX: {
+                Byte ZeroPageAddress = Fetch(ticks, memory);
+                ZeroPageAddress += x;
+                ticks--;
+                Byte value = Read(ticks, ZeroPageAddress, memory);
+                a = a & value;
+                LDASetFlags();
+            } break;
 
-                default: {
-                    printf("Instruction not handled %d\n", instruction);
-                } break;
+            case INS_DEC_ZP: {
+                Byte ZeroPage = Fetch(ticks, memory);
+                Byte value = Read(ticks, ZeroPage, memory);
+                value--;
+                memory.Write(value, ZeroPage, ticks);
+                zero = (value == 0);
+                negative = (value & 0b10000000) > 0;
+            } break;
+
+            case INS_DEC_ZPX: {
+                Byte ZeroPage = Fetch(ticks, memory);
+                ZeroPage += x;
+                ticks--;
+                Byte value = Read(ticks, ZeroPage, memory);
+                value--;
+                memory.Write(value, ZeroPage, ticks);
+                zero = (value == 0);
+                negative = (value & 0b10000000) > 0;
+            } break;
+
+            case INS_INC_ZP: {
+                Byte ZeroPage = Fetch(ticks, memory);
+                Byte value = Read(ticks, ZeroPage, memory);
+                value++;
+                memory.Write(value, ZeroPage, ticks);
+                zero = (value == 0);
+                negative = (value & 0b10000000) > 0;
+            } break;
+
+            case INS_INC_ZPX: {
+                Byte ZeroPage = Fetch(ticks, memory);
+                ZeroPage += x;
+                ticks--;
+                Byte value = Read(ticks, ZeroPage, memory);
+                value--;
+                memory.Write(value, ZeroPage, ticks);
+                zero = (value == 0);
+                negative = (value & 0b10000000) > 0;
+            } break;
+
+            case INS_ASL_ACC: {
+                a = a << 1;
+                ticks--;
+                LDASetFlags();
+            } break;
+
+            case INS_ASL_ZP: {
+                Byte ZeroPage = Fetch(ticks, memory);
+                Byte value = Read(ticks, ZeroPage, memory);
+                value = value << 1;
+                ticks--;
+                memory.Write(value, ZeroPage, ticks);
+                carry = negative = (value & 0b10000000) > 0;
+                zero = (value == 0);
+            } break;
+
+            case INS_ASL_ZPX: {
+                Byte ZeroPage = Fetch(ticks, memory);
+                ZeroPage += x;
+                ticks--;
+                Byte value = Read(ticks, ZeroPage, memory);
+                value = value << 1;
+                ticks--;
+                memory.Write(value, ZeroPage, ticks);
+                carry = negative = (value & 0b10000000) > 0;
+                zero = (value == 0);
+            } break;
+
+            case INS_LSR_ACC: {
+                a = a >> 1;
+                ticks--;
+                LDASetFlags();
+            } break;
+
+            case INS_LSR_ZP: {
+                Byte ZeroPage = Fetch(ticks, memory);
+                Byte value = Read(ticks, ZeroPage, memory);
+                value = value >> 1;
+                ticks--;
+                memory.Write(value, ZeroPage, ticks);
+                carry = negative = (value & 0b10000000) > 0;
+                zero = (value == 0);
+            } break;
+
+            case INS_LSR_ZPX: {
+                Byte ZeroPage = Fetch(ticks, memory);
+                ZeroPage += x;
+                ticks--;
+                Byte value = Read(ticks, ZeroPage, memory);
+                value = value >> 1;
+                ticks--;
+                memory.Write(value, ZeroPage, ticks);
+                carry = negative = (value & 0b10000000) > 0;
+                zero = (value == 0);
+            } break;
+
+            case INS_ORA_IM: {
+                Byte value = Fetch(ticks, memory);
+                a |= value;
+                LDASetFlags();
+            } break;
+
+            case INS_ORA_ZP: {
+                Byte ZeroPage = Fetch(ticks, memory);
+                Byte value = Read(ticks, ZeroPage, memory);
+                a |= value;
+                LDASetFlags();
+            } break;
+
+            case INS_ORA_ZPX: {
+                Byte ZeroPage = Fetch(ticks, memory);
+                ZeroPage += x;
+                ticks--;
+                Byte value = Read(ticks, ZeroPage, memory);
+                a |= value;
+                LDASetFlags();
+            } break;
+
+            case INS_JMP: {
+                Word newAddress = FetchWord(ticks, memory);
+                program_counter = newAddress;
+            } break;
+
+            case INS_RTS: {
+                program_counter = stack_pointer;
+                Word NewProgramCounter = FetchWord(ticks, memory);
+                memory.WriteWord(0, stack_pointer, ticks);
+                program_counter = NewProgramCounter;
+                ticks--;
+                stack_pointer -= 2;
+            } break;
+
+            case INS_JSR: {
+                Word SubRoutineAddress = FetchWord(ticks, memory);
+                memory.WriteWord(program_counter - 1, stack_pointer, ticks);
+                stack_pointer++;
+                program_counter = SubRoutineAddress;
+            } break;
+
+            default: {
+                printf("Instruction not handled %d\n", instruction);
+            } break;
             }
             if (program_counter < 0xFF00) {
                 break;
             }
         }
+    }
+
+    void replace(char v, char c, string& str) {
+        size_t index = str.find_first_of(v);
+        // str.replace(index, 1, c);
+    }
+
+    u32 splitByNewLine(string sentence, MEMORY& memory) {
+        stringstream ss;
+        string line;
+
+        Word counter = program_counter;
+        u32 ticks = 0;
+
+        ss << sentence;
+
+        int16_t found;
+        string temp;
+        while (!ss.eof()) {
+            ss >> temp;
+
+            if (counter < program_counter) {
+                cout << "Program size is too big. Exit";
+                exit(3);
+            }
+
+            if (istringstream(temp) >> found)
+                InterpretNumbers(found, counter, memory);
+            else {
+                interpretInstruction(temp, counter, memory, ticks);
+            }
+        }
+        return ticks;
+    }
+
+    string ReadFileInstructions(string FileName) {
+        string TextOfInstructions;
+        string Output;
+
+        ifstream InstructionFile(FileName);
+
+        while (getline(InstructionFile, TextOfInstructions)) {
+            Output += "\n" + TextOfInstructions;
+        }
+
+        InstructionFile.close();
+
+        return Output;
     }
 };
 
@@ -441,29 +928,18 @@ int main() {
     CPU6502 cpu;
     cpu.Reset(memory);
 
-    // inline program (test instructions (hard coded into memory)) - Start
+    string result = cpu.ReadFileInstructions("./program.xndr");
 
-    memory[0xFFF1] = CPU6502::INS_LDA_IM; // 2 ticks
-    memory[0xFFF2] = 0x26;
-    memory[0xFFF3] = CPU6502::INS_TAX; // 2 ticks
-    memory[0xFFF4] = CPU6502::INS_INX; // 2 ticks
-    memory[0xFFF5] = CPU6502::INS_JMP; // 3 ticks
-    memory[0xFFF6] = 0x01;
-    memory[0xFFF7] = 0xFF;
-    memory[0xFF01] = CPU6502::INS_TAY; // 2 ticks
-    memory[0xFF02] = CPU6502::INS_DEY; // 2 ticks
-    memory[0xFF03] = CPU6502::INS_DEY; // 2 ticks
+    u32 ticks = cpu.splitByNewLine(result, memory);
 
-    // inline program (test instructions (hard coded into memory)) - End
-
-    cpu.Execute(15, memory);
+    cpu.Execute(ticks, memory);
 
     if (cpu.program_counter < 0xFF00) {
         printf("Program counter overflow. Exit");
         return 1;
     }
 
-    printf("a register: %d\nx register: %d\ny register: %d", cpu.a, cpu.x, cpu.y);
+    printf("a: %d\nx: %d\ny: %d", cpu.a, cpu.x, cpu.y);
 
     return 0;
 };
