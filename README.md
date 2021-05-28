@@ -2,16 +2,6 @@
 
 This is an emulator for a 6502 Processor coded in C++
 
-The only way to run a program is to hard-code it in main.cpp and provide the correct ticks for the execution function.
-
-Current hardcoded program outputs this:
-
-```
-a register: 38
-x register: 39
-y register: 36
-```
-
 ## Working functions
 
  - **LDA** - Load memory into A registry
@@ -42,5 +32,89 @@ y register: 36
  - **CLD** - Clear decimal mode
  - **CLI** - Clear interrupt disable
  - **CLV** - Clear overflow flag
+ - **AND** - Logical AND
+ - **DEC** - Decrement memory
+ - **INC** - Increment memory
+ - **ASL** - Arithmetic bit wise shift left
+ - **LSR** - Logical shift right
+ - **ORA** - Logical inclusive OR
+ - **JMP** - Jump
 
-I'm working on more functions
+### Operation codes as words
+
+**To run a program you might use the words below in the separate file called program.txt in the same directory**
+
+ - **ldaim** - Load Accumulator | Immediate
+ - **ldazp** - Load Accumulator | Zero Page
+ - **ldazpx** - Load Accumulator | Zero Page X
+ - **ldxim** - Load X | Immediate
+ - **ldxzp** - Load X | Zero Page
+ - **ldxzpy** - Load X | Zero Page Y
+ - **ldyim** - Load Y | Immediate
+ - **ldyzp** - Load Y | Zero Page
+ - **ldyzpx** - Load Y | Zero Page X
+ - **sta** - Store Accumulator | Zero Page
+ - **stax** - Store Accumulator | Zero Page X
+ - **stx** - Store X | Zero Page
+ - **stxy** - Store X | Zero Page Y
+ - **sty** - Store Y | Zero Page
+ - **styx** - Store Y | Zero Page X
+ - **tax** - Transfer Accumulator into X
+ - **tay** - Transfer Accumulator into Y
+ - **txa** - Transfer X into Accumulator
+ - **tya** - Transfer Y into Accumulator
+ - **tsx** - Transfer stack pointer into X
+ - **txs** - Transfer X into stack pointer
+ - **pha** - Push Accumulator on stack
+ - **pla** - Pull Accumulator from stack
+ - **inx** - Increment X
+ - **iny** - Increment Y
+ - **dex** - Decrement X
+ - **dey** - Decrement Y
+ - **nop** - No operation
+ - **rts** - Return from subroutine
+ - **sec** - Set carry flag
+ - **sed** - Set decimal flag
+ - **sei** - Set interrupt flag
+ - **clc** - Clear carry flag
+ - **cld** - Clear decimal flag
+ - **cli** - Clear interrupt flag
+ - **clv** - Clear overflow flag
+ - **and** - Logical AND | Immediate
+ - **andzp** - Logical AND | Zero Page
+ - **andzpx** - Logical AND | Zero Page X
+ - **dec** - Decrement | Zero Page
+ - **decx** - Decrement | Zero Page X
+ - **inc** - Increment | Zero Page
+ - **incx** - Increment | Zero Page X
+ - **asl** - Arithmetic bit wise shift left | Immediate
+ - **aslzp** - Arithmetic bit wise shift left | Zero Page
+ - **aslzpx** - Arithmetic bit wise shift left | Zero Page X
+ - **lsr** - Logical shift right | Immediate
+ - **lsrzp** - Logical shift right | Zero Page
+ - **lsrzpx** - Logical shift right | Zero Page X
+ - **or** - Logical inclusive OR | Immediate
+ - **orzp** - Logical inclusive OR | Zero Page
+ - **orzpx** - Logical inclusive OR | Zero Page X
+ - **jmp** - Jump | Absolute
+ - **jsr** - Jump to subroutine
+
+*Example*:
+```
+ldaim
+25
+ldxim
+35
+dex
+```
+=>
+```
+a: 25
+x: 34
+y: 0
+```
+
+**Addresses and numbers have to be in Base 10**
+**Every operation, argument or address has to be on his own line**
+
+*Every unknown operation results in a **nop**, except if it's a number/address*
